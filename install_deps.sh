@@ -1,6 +1,6 @@
 #!/bin/bash
 
-deps_dir=/home/cyx/rdma_bw_exercise/deps # 换成你的目录
+deps_dir=/home/zk21u/rdma_bw_exercise/deps # 换成你的目录
 install_dir=${deps_dir}/install
 
 mkdir -p ${deps_dir}/install
