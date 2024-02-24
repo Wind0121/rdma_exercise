@@ -1,5 +1,5 @@
 #!/bin/bash
-deps_dir=/home/cyx/rdma_write_send_exercise/deps # 换成你的目录
+deps_dir=/home/zk21u/rdma_write_send_exercise/deps # 换成你的目录
 
 mkdir -p ${deps_dir}/gits
 cd ${deps_dir}/gits
