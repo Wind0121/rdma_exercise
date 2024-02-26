@@ -27,9 +27,9 @@ struct RdmaQpExchangeInfo {
 
 constexpr int kRdmaDefaultPort = 1; // 查询设备信息时使用的默认端口号
 constexpr int kRdmaSl = 0;          // service level
-constexpr size_t kWriteSize = 10;
+constexpr size_t kWriteSize = 256;
 // WQ、CQ 的大小
-constexpr int kRdmaQueueSize = 26;
+constexpr int kRdmaQueueSize = 2048;
 constexpr int kGidIndex = 1; // magic
 
 // 通过网卡名称获取 RdmaDeviceInfo

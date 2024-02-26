@@ -47,6 +47,7 @@ struct ServerContext {
 
     // 2. mr and buffer
     buf = reinterpret_cast<char *>(memalign(4096, kWriteSize * kRdmaQueueSize));
+    memset(buf,0,kWriteSize * kRdmaQueueSize);
     mr = ibv_reg_mr(dev_info.pd, buf, kWriteSize * kRdmaQueueSize,
                     IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
                         IBV_ACCESS_REMOTE_READ);
@@ -57,6 +58,7 @@ struct ServerContext {
 
     // 3. flag_mr
     char* flag_buf = reinterpret_cast<char *>(memalign(4096,kWriteSize));
+    memset(flag_buf,0,kWriteSize);
     flag_mr = ibv_reg_mr(dev_info.pd,flag_buf,kWriteSize,IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
                         IBV_ACCESS_REMOTE_READ);
 
@@ -168,17 +170,22 @@ int main(int argc, char *argv[]) {
   jrpc_server->StartListening();
   printf("server start listening...\n");
   
+  int cnt = 0;
   // 3. wait finish flag
   while(true){
     int n = ibv_poll_cq(s_ctx.cq,kRdmaQueueSize,wc);
     if(n != 0){
-      printf("%s\n",reinterpret_cast<char*>(s_ctx.flag_mr->addr));
+      int k = 0;
+      while(reinterpret_cast<char*>(s_ctx.flag_mr->addr)[k] != '\0'){
+        cnt *= 10;
+        cnt += reinterpret_cast<char*>(s_ctx.flag_mr->addr)[k++] - '0';
+      }
       break;
     }
   }
 
   // 4. print content
-  for(int i = 0;i < kRdmaQueueSize;i++){
+  for(int i = 0;i < cnt;i++){
     printf("%s\n",s_ctx.buf + i * kWriteSize);
   }
 

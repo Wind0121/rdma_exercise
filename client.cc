@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <infiniband/verbs.h>
+#include <ios>
 #include <iostream>
 #include <json/value.h>
 #include <jsonrpccpp/client.h>
@@ -15,6 +16,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <fstream>
 
 using std::cerr;
 using std::endl;
@@ -48,6 +50,7 @@ struct ClientContext {
 
     // 2. mr and buffer
     buf = reinterpret_cast<char *>(memalign(4096, kWriteSize * kRdmaQueueSize));
+    memset(buf,0,kWriteSize * kRdmaQueueSize);
     mr = ibv_reg_mr(dev_info.pd, buf, kWriteSize * kRdmaQueueSize,
                     IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
                         IBV_ACCESS_REMOTE_READ);
@@ -55,9 +58,9 @@ struct ClientContext {
       cerr << "register mr failed" << "\n";
       exit(0);
     }
-    memset(buf,0,kWriteSize * kRdmaQueueSize);
 
     char* flag_buf = reinterpret_cast<char *>(memalign(4096,kWriteSize));
+    memset(flag_buf,0,kWriteSize);
     flag_mr = ibv_reg_mr(dev_info.pd, flag_buf, kWriteSize,
                   IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
                           IBV_ACCESS_REMOTE_READ);
@@ -65,8 +68,6 @@ struct ClientContext {
       cerr << "register flag_mr failed" << "\n";
       exit(0);
     }
-    memset(flag_buf,0,kWriteSize);
-    snprintf(flag_buf,kWriteSize,"OK!");
 
     // 3. create cq
     cq = dev_info.CreateCq(kRdmaQueueSize);
@@ -158,18 +159,28 @@ int main(int argc, char *argv[]) {
 
   c_ctx.BuildRdmaEnvironment(dev_name);
 
+  std::ifstream pd;
+  pd.open("./download_deps.sh",std::ios::in);
+  if(!pd.is_open()){
+    cerr << "can't open file" << "\n";
+    exit(0);
+  }
+
   // 2. start linking
   ExchangeQP();
 
-  for(int i = 0;i < kRdmaQueueSize;i++){
-    memset(c_ctx.buf + i * kWriteSize,'a' + i,kWriteSize - 1);
-    printf("%d: %s\n",i,c_ctx.buf + i * kWriteSize);
-    RdmaPostWrite(kWriteSize,c_ctx.mr->lkey,i,c_ctx.qp,c_ctx.buf + i * kWriteSize,
-                  c_ctx.remote_addr + i * kWriteSize,c_ctx.rkey);
+  int k = 0;
+  while(pd.getline(c_ctx.buf + k * kWriteSize,kWriteSize)){
+    RdmaPostWrite(kWriteSize,c_ctx.mr->lkey,k,c_ctx.qp,c_ctx.buf + k * kWriteSize,
+                  c_ctx.remote_addr + k * kWriteSize,c_ctx.rkey);
+    // printf("%d: %s\n",k,c_ctx.buf + k * kWriteSize);
+    k++;
   }
   
+  snprintf(reinterpret_cast<char*>(c_ctx.flag_mr->addr),kWriteSize,"%d",k);
   RdmaPostSend(kWriteSize, c_ctx.flag_mr->lkey, 114514, 1919810, c_ctx.qp, c_ctx.flag_mr->addr);
 
+  pd.close();
   c_ctx.DestroyRdmaEnvironment();
 
   return 0;
