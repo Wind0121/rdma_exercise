@@ -27,10 +27,9 @@ struct RdmaQpExchangeInfo {
 
 constexpr int kRdmaDefaultPort = 1; // 查询设备信息时使用的默认端口号
 constexpr int kRdmaSl = 0;          // service level
-constexpr size_t kWriteSize = 1024 * 1024;
-constexpr int kTransmitDepth = 2048; // 同时可以有多少个 Write+Send 组合
+constexpr size_t kWriteSize = 10;
 // WQ、CQ 的大小
-constexpr int kRdmaQueueSize = 2048;
+constexpr int kRdmaQueueSize = 26;
 constexpr int kGidIndex = 1; // magic
 
 // 通过网卡名称获取 RdmaDeviceInfo
@@ -59,5 +58,9 @@ int RdmaPostSend(uint32_t req_size, uint32_t lkey, uint64_t wr_id,
                  uint32_t imm_data, ibv_qp *qp, const void *buf);
 int RdmaPostRecv(uint32_t req_size, uint32_t lkey, uint64_t wr_id, ibv_qp *qp,
                  const void *buf);
+
+int RdmaPostWrite(uint32_t req_size, uint32_t lkey, uint64_t wr_id,
+                 ibv_qp *qp, const void *buf, uint64_t remote_addr, uint32_t rkey);
+
 // NOLINTEND(google-objc-function-naming)
 #endif // MAPLEFS_COMMON_RDMA_H

@@ -267,3 +267,28 @@ int RdmaPostRecv(uint32_t req_size, uint32_t lkey, uint64_t wr_id, ibv_qp *qp,
   ret = ibv_post_recv(qp, &recv_wr, &bad_recv_wr);
   return ret;
 }
+
+int RdmaPostWrite(uint32_t req_size, uint32_t lkey, uint64_t wr_id,
+                 ibv_qp *qp, const void *buf, uint64_t remote_addr, uint32_t rkey){
+  int ret = 0;
+  struct ibv_send_wr *bad_send_wr;
+
+  struct ibv_sge list;
+  memset(&list,0,sizeof(ibv_sge));
+  list.addr = reinterpret_cast<uintptr_t>(buf);
+  list.length = req_size;
+  list.lkey = lkey;
+
+  struct ibv_send_wr write_wr;
+  memset(&write_wr,0,sizeof(ibv_send_wr));
+  write_wr.wr_id = wr_id;
+  write_wr.sg_list = &list;
+  write_wr.num_sge = 1;
+  write_wr.opcode = IBV_WR_RDMA_WRITE;
+  write_wr.send_flags = IBV_SEND_SIGNALED;
+  write_wr.wr.rdma.remote_addr = remote_addr;
+  write_wr.wr.rdma.rkey = rkey;
+
+  ret = ibv_post_send(qp,&write_wr, &bad_send_wr);
+  return ret;
+}
