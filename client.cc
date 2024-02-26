@@ -19,9 +19,7 @@
 #include <fstream>
 
 using std::cerr;
-using std::endl;
 using std::string;
-using std::unordered_map;
 
 struct ClientContext {
   int link_type; // IBV_LINK_LAYER_XX
@@ -162,13 +160,15 @@ int main(int argc, char *argv[]) {
   std::ifstream pd;
   pd.open("./download_deps.sh",std::ios::in);
   if(!pd.is_open()){
-    cerr << "can't open file" << "\n";
+    cerr << "client: can't open file" << "\n";
     exit(0);
   }
 
   // 2. start linking
   ExchangeQP();
 
+  // 3. write data
+  printf("start write data\n");
   int k = 0;
   while(pd.getline(c_ctx.buf + k * kWriteSize,kWriteSize)){
     RdmaPostWrite(kWriteSize,c_ctx.mr->lkey,k,c_ctx.qp,c_ctx.buf + k * kWriteSize,
@@ -178,8 +178,35 @@ int main(int argc, char *argv[]) {
   }
   
   snprintf(reinterpret_cast<char*>(c_ctx.flag_mr->addr),kWriteSize,"%d",k);
-  RdmaPostSend(kWriteSize, c_ctx.flag_mr->lkey, 114514, 1919810, c_ctx.qp, c_ctx.flag_mr->addr);
+  RdmaPostSend(kWriteSize, c_ctx.flag_mr->lkey, 666, 23333, c_ctx.qp, c_ctx.flag_mr->addr);
 
+  // 4. read data
+  printf("start read data\n");
+  RdmaPostRecv(kWriteSize, c_ctx.flag_mr->lkey, 667, c_ctx.qp, c_ctx.flag_mr->addr);
+  bool flag = true;
+  int cnt = 0;
+  while(flag){
+    int n = ibv_poll_cq(c_ctx.cq, kRdmaQueueSize,wc);
+    for(int i = 0;i < n;i++)
+      if(wc[i].status == IBV_WC_SUCCESS && wc[i].opcode == IBV_WC_RECV){
+        int k = 0;
+        while(reinterpret_cast<char*>(c_ctx.flag_mr->addr)[k] != '\0'){
+          cnt *= 10;
+          cnt += reinterpret_cast<char*>(c_ctx.flag_mr->addr)[k++] - '0';
+        }
+        flag = false;
+      }
+  }
+  memset(c_ctx.buf,0,kWriteSize * kRdmaQueueSize);
+  for(int i = 0;i < cnt;i++){
+    RdmaPostRead(kWriteSize,c_ctx.mr->lkey,i,c_ctx.qp,c_ctx.buf + i * kWriteSize,
+                  c_ctx.remote_addr + i * kWriteSize,c_ctx.rkey);
+  }
+  for(int i = 0;i < cnt;i++){
+    printf("%s\n",c_ctx.buf + i * kWriteSize);
+  }
+
+  RdmaPostSend(kWriteSize, c_ctx.flag_mr->lkey, 668, 23333, c_ctx.qp, c_ctx.flag_mr->addr);
   pd.close();
   c_ctx.DestroyRdmaEnvironment();
 

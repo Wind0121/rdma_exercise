@@ -62,5 +62,8 @@ int RdmaPostRecv(uint32_t req_size, uint32_t lkey, uint64_t wr_id, ibv_qp *qp,
 int RdmaPostWrite(uint32_t req_size, uint32_t lkey, uint64_t wr_id,
                  ibv_qp *qp, const void *buf, uint64_t remote_addr, uint32_t rkey);
 
+int RdmaPostRead(uint32_t req_size, uint32_t lkey, uint64_t wr_id,
+                 ibv_qp *qp, const void *buf, uint64_t remote_addr, uint32_t rkey);
+
 // NOLINTEND(google-objc-function-naming)
 #endif // MAPLEFS_COMMON_RDMA_H

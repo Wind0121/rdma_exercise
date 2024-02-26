@@ -5,6 +5,7 @@
 #include <cstring>
 #include <infiniband/verbs.h>
 #include <iostream>
+#include <istream>
 #include <jsonrpccpp/common/procedure.h>
 #include <jsonrpccpp/common/specification.h>
 #include <jsonrpccpp/server.h>
@@ -14,12 +15,12 @@
 #include <string>
 #include <sys/time.h>
 #include <vector>
+#include <fstream>
 
 using jsonrpc::JSON_STRING;
 using jsonrpc::PARAMS_BY_NAME;
 using jsonrpc::Procedure;
 using std::cerr;
-using std::endl;
 using std::string;
 
 constexpr int64_t kShowInterval = 2000000;
@@ -189,7 +190,32 @@ int main(int argc, char *argv[]) {
     printf("%s\n",s_ctx.buf + i * kWriteSize);
   }
 
-  // 5. destroy enviroment
+  // 5. prepare for read
+  std::ifstream pd;
+  pd.open("./install_deps.sh",std::ios::in);
+  if(!pd.is_open()){
+    cerr << "server: can't open file" << "\n";
+    exit(0);
+  }
+  cnt = 0;
+  memset(s_ctx.buf,0,kWriteSize * kRdmaQueueSize);
+  while(pd.getline(s_ctx.buf + cnt * kWriteSize,kWriteSize)){
+    cnt++;
+  }
+  snprintf(reinterpret_cast<char*>(s_ctx.flag_mr->addr),kWriteSize,"%d",cnt);
+  RdmaPostSend(kWriteSize, s_ctx.flag_mr->lkey, 666, 23333, s_ctx.qp, s_ctx.flag_mr->addr);
+
+  // 6. wait for completion
+  RdmaPostRecv(kWriteSize, s_ctx.flag_mr->lkey, 667, s_ctx.qp, s_ctx.flag_mr->addr);
+  bool flag = true;
+  while(flag){
+    int n = ibv_poll_cq(s_ctx.cq,kRdmaQueueSize,wc);
+    for(int i = 0;i < n;i++)
+      if(wc[i].status == IBV_WC_SUCCESS && wc[i].opcode == IBV_WC_RECV)
+        flag = false;
+  }
+
+  // 7. destroy enviroment
   s_ctx.DestroyRdmaEnvironment();
 
   return 0;
