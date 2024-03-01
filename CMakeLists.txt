@@ -8,8 +8,8 @@ SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -g -ggdb -fno-omit-frame-pointer -
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3")
 
 # 记得换成你的目录
-set(CMAKE_PREFIX_PATH "/home/zk21u/rdma_write_send_exercise/deps/install")
-include_directories("/home/zk21u/rdma_write_send_exercise/deps/install/include")
+set(CMAKE_PREFIX_PATH "/home/zk21u/rdma_write_read_exercise/deps/install")
+include_directories("/home/zk21u/rdma_write_read_exercise/deps/install/include")
 
 # libjsonrpccpp 
 find_package(libjson-rpc-cpp REQUIRED)
