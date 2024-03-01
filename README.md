@@ -18,12 +18,12 @@
 ## 运行
 
 ```bash
-./build/saw_server mlx4_0 7898
+./build/saw_server mlx4_0 7897
 ```
 
 ```bash
 export LD_LIBRARY_PATH=/home/zk21u/rdma_bw_exercise/deps/install/lib
-./build/saw_client mlx4_0 192.168.1.41 7898
+./build/saw_client mlx4_0 192.168.1.41 7897
 ```
 
 ## 结果

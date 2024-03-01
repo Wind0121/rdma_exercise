@@ -84,6 +84,9 @@ struct ClientContext {
     ibv_destroy_cq(cq);
     ibv_dereg_mr(mr);
     free(buf);
+    char* tmp = reinterpret_cast<char*>(flag_mr->addr);
+    ibv_dereg_mr(flag_mr);
+    free(tmp);
     ibv_dealloc_pd(dev_info.pd);
     ibv_close_device(dev_info.ctx);
   }
